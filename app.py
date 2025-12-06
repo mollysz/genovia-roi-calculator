@@ -199,7 +199,7 @@ summary_df = pd.DataFrame(
 st.bar_chart(summary_df)
 
 # ------------------ TIER COMPARISON ------------------
-st.subheader("Optional — Compare Tiers at Same Clinic Price")
+st.subheader("Compare Tiers at Same Clinic Price")
 
 if st.checkbox("Show comparison table"):
     comparison = []
