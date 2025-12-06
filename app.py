@@ -396,7 +396,7 @@ report_buffer = build_word_report(
 
 st.markdown("---")
 st.download_button(
-    label="⬇️ Download Word report (management summary)",
+    label="⬇️ Download Word report ",
     data=report_buffer,
     file_name="Genovia_ROI_Report.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
