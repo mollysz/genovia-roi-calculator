@@ -199,34 +199,67 @@ summary_df = pd.DataFrame(
 st.bar_chart(summary_df)
 
 # ------------------ TIER COMPARISON ------------------
+# st.subheader("Compare Tiers at Same Clinic Price")
+
+# if st.checkbox("Show comparison table"):
+#     comparison = []
+#     for tname, info in tiers_runtime.items():
+#         r = calc_roi(
+#             tier=info,
+#             num_cases=num_cases,
+#             price_per_tx=price_per_tx,
+#             extra_cost_per_tx=extra_cost_per_tx,
+#             shipping_cost=shipping_cost,
+#         )
+#         comparison.append(
+#             {
+#                 "Tier": tname,
+#                 "Cost per treatment": r["cost_per_tx_product"],
+#                 "Total Profit": r["total_profit"],
+#                 "ROI %": r["roi_pct"],
+#             }
+#         )
+
+#     comp_df = pd.DataFrame(comparison)
+#     st.table(comp_df)
+
+#     # Profit chart
+#     st.markdown("#### Profit by Tier")
+#     st.bar_chart(comp_df.set_index("Tier")["Total Profit"])
+
+#     # ROI chart
+#     st.markdown("#### ROI by Tier")
+#     st.bar_chart(comp_df.set_index("Tier")["ROI %"])
+
 st.subheader("Compare Tiers at Same Clinic Price")
 
-if st.checkbox("Show comparison table"):
-    comparison = []
-    for tname, info in tiers_runtime.items():
-        r = calc_roi(
-            tier=info,
-            num_cases=num_cases,
-            price_per_tx=price_per_tx,
-            extra_cost_per_tx=extra_cost_per_tx,
-            shipping_cost=shipping_cost,
-        )
-        comparison.append(
-            {
-                "Tier": tname,
-                "Cost per treatment": r["cost_per_tx_product"],
-                "Total Profit": r["total_profit"],
-                "ROI %": r["roi_pct"],
-            }
-        )
+# Always compute comparison — no checkbox needed
+comparison = []
+for tname, info in tiers_runtime.items():
+    r = calc_roi(
+        tier=info,
+        num_cases=num_cases,
+        price_per_tx=price_per_tx,
+        extra_cost_per_tx=extra_cost_per_tx,
+        shipping_cost=shipping_cost,
+    )
+    comparison.append(
+        {
+            "Tier": tname,
+            "Cost per treatment": r["cost_per_tx_product"],
+            "Total Profit": r["total_profit"],
+            "ROI %": r["roi_pct"],
+        }
+    )
 
-    comp_df = pd.DataFrame(comparison)
-    st.table(comp_df)
+comp_df = pd.DataFrame(comparison)
 
-    # Profit chart
-    st.markdown("#### Profit by Tier")
-    st.bar_chart(comp_df.set_index("Tier")["Total Profit"])
+st.table(comp_df)
 
-    # ROI chart
-    st.markdown("#### ROI by Tier")
-    st.bar_chart(comp_df.set_index("Tier")["ROI %"])
+# Profit chart
+st.markdown("#### Profit by Tier")
+st.bar_chart(comp_df.set_index("Tier")["Total Profit"])
+
+# ROI chart
+st.markdown("#### ROI by Tier")
+st.bar_chart(comp_df.set_index("Tier")["ROI %"])
