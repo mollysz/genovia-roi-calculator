@@ -1,0 +1,4 @@
+key,value
+currency_symbol,$
+default_min_cases_global,1
+default_max_cases_global,500

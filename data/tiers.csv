@@ -1,0 +1,4 @@
+tier_name,description,case_price,cost_per_tx,savings_vs_standard_pct,tx_per_case,default_clinic_price_per_tx,default_extra_cost_per_tx,default_min_cases,default_max_cases
+Standard,Entry tier no discount. Good for new MedSpas.,850,85,0.0,10,1200,50,1,50
+Gold,Volume tier with reduced cost per treatment.,743,74,12.5,10,1200,50,6,100
+Diamond,Best pricing for high-volume clinics.,708,70,16.67,10,1200,50,10,200
