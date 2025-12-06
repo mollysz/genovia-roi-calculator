@@ -108,7 +108,7 @@ def fc1(x):
 # =========================================================
 st.set_page_config(page_title="Genovia ROI Calculator", page_icon="💧", layout="centered")
 
-st.title("Genovia™ ROI Calculator (CSV Version)")
+st.title("Genovia™ ROI Calculator")
 st.caption("All pricing and costs load from CSV files in your GitHub repo.")
 
 # ------------------ SIDEBAR OVERRIDES ------------------
