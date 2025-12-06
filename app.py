@@ -486,28 +486,66 @@ st.title("Genovia™ ROI Calculator")
 st.caption("All pricing and costs load from CSV files in your GitHub repo.")
 
 # ------------------ SIDEBAR OVERRIDES ------------------
-with st.sidebar:
-    st.header("Advanced Overrides")
-    use_overrides = st.checkbox("Enable manual overrides", value=False)
+# with st.sidebar:
+#     st.header("Advanced Overrides")
+#     use_overrides = st.checkbox("Enable manual overrides", value=False)
 
-    tiers_runtime = {k: v.copy() for k, v in TIERS_BASE.items()}
-    shipping_runtime = SHIPPING_BASE.copy()
+#     tiers_runtime = {k: v.copy() for k, v in TIERS_BASE.items()}
+#     shipping_runtime = SHIPPING_BASE.copy()
 
-    if use_overrides:
-        for tier_name, tier in tiers_runtime.items():
-            with st.expander(f"{tier_name} Tier"):
-                tier["case_price"] = st.number_input(
-                    f"{tier_name} case price", 0.0, step=10.0, value=tier["case_price"]
-                )
-                tier["cost_per_tx"] = st.number_input(
-                    f"{tier_name} cost per treatment", 0.0, step=1.0, value=tier["cost_per_tx"]
-                )
-                tier["tx_per_case"] = st.number_input(
-                    f"{tier_name} treatments per case",
-                    min_value=1,
-                    step=1,
-                    value=tier["tx_per_case"],
-                )
+#     if use_overrides:
+#         for tier_name, tier in tiers_runtime.items():
+#             with st.expander(f"{tier_name} Tier"):
+#                 tier["case_price"] = st.number_input(
+#                     f"{tier_name} case price", 0.0, step=10.0, value=tier["case_price"]
+#                 )
+#                 tier["cost_per_tx"] = st.number_input(
+#                     f"{tier_name} cost per treatment", 0.0, step=1.0, value=tier["cost_per_tx"]
+#                 )
+#                 tier["tx_per_case"] = st.number_input(
+#                     f"{tier_name} treatments per case",
+#                     min_value=1,
+#                     step=1,
+#                     value=tier["tx_per_case"],
+#                 )
+st.markdown("### Tier Settings & Pricing Inputs")
+st.caption(
+    "Adjust price and cost parameters for each Genovia tier to model different business scenarios. "
+    "These settings affect only this session and do not change your master CSV files."
+)
+
+# start from base config each run
+tiers_runtime = {k: v.copy() for k, v in TIERS_BASE.items()}
+shipping_runtime = SHIPPING_BASE.copy()
+
+settings_col1, settings_col2 = st.columns(2)
+
+with settings_col1:
+    st.markdown("**Tier Pricing Parameters**")
+    for tier_name, tier in tiers_runtime.items():
+        with st.expander(f"{tier_name} — Pricing Settings", expanded=False):
+            tier["case_price"] = st.number_input(
+                f"{tier_name} · Case Price",
+                min_value=0.0,
+                step=10.0,
+                value=tier["case_price"],
+                key=f"case_price_{tier_name}",
+            )
+            tier["cost_per_tx"] = st.number_input(
+                f"{tier_name} · Cost per Treatment (Genovia)",
+                min_value=0.0,
+                step=1.0,
+                value=tier["cost_per_tx"],
+                key=f"cost_per_tx_{tier_name}",
+            )
+            tier["tx_per_case"] = st.number_input(
+                f"{tier_name} · Treatments per Case",
+                min_value=1,
+                step=1,
+                value=tier["tx_per_case"],
+                key=f"tx_per_case_{tier_name}",
+            )
+
 
 # ------------------ MAIN INPUTS ------------------
 st.subheader("Step 1 — Clinic Inputs")
