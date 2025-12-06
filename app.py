@@ -182,7 +182,6 @@ def build_word_report(
         r[2].text = fc(row["Total Profit"])
         r[3].text = f"{row['ROI %']:.1f}%"
 
-    # highlight best tier
     best_row = comp_df.loc[comp_df["ROI %"].idxmax()]
     best_tier = best_row["Tier"]
     best_roi = best_row["ROI %"]
@@ -213,22 +212,20 @@ def build_word_report(
 st.set_page_config(page_title="Genovia ROI Calculator", page_icon="💧", layout="centered")
 
 st.title("Genovia™ ROI Calculator")
-st.caption("All pricing and costs load from CSV files in your GitHub repo.")
+st.caption("Tier pricing and clinic assumptions on the left. ROI insights and downloads on the right.")
 
-# ------------------ TIER SETTINGS & PRICING INPUTS ------------------
-st.markdown("### Tier Settings & Pricing Inputs")
-st.caption(
-    "Adjust price and cost parameters for each Genovia tier to model different business scenarios. "
-    "These settings affect only this session and do not change your master CSV files."
-)
+# ------------------ SIDEBAR: ALL INPUTS ------------------
+with st.sidebar:
+    st.markdown("### Tier Settings & Pricing Inputs")
+    st.caption(
+        "Adjust price and cost parameters for each Genovia tier to model different scenarios. "
+        "These settings affect only this session and do not change your master CSV files."
+    )
 
-tiers_runtime = {k: v.copy() for k, v in TIERS_BASE.items()}
-shipping_runtime = SHIPPING_BASE.copy()
+    tiers_runtime = {k: v.copy() for k, v in TIERS_BASE.items()}
+    shipping_runtime = SHIPPING_BASE.copy()
 
-settings_col1, settings_col2 = st.columns(2)
-
-with settings_col1:
-    st.markdown("**Tier Pricing Parameters**")
+    # Tier settings
     for tier_name, tier in tiers_runtime.items():
         with st.expander(f"{tier_name} — Pricing Settings", expanded=False):
             tier["case_price"] = st.number_input(
@@ -253,52 +250,46 @@ with settings_col1:
                 key=f"tx_per_case_{tier_name}",
             )
 
-with settings_col2:
-    st.markdown("**Shipping Cost Assumptions**")
-    for ship_name, cost in list(shipping_runtime.items()):
-        shipping_runtime[ship_name] = st.number_input(
-            f"{ship_name}",
-            min_value=0.0,
-            step=5.0,
-            value=cost,
-            key=f"shipping_{ship_name}",
-        )
+    st.markdown("---")
+    st.markdown("### Clinic Inputs")
 
-st.markdown("---")
+    tier_choice = st.selectbox("Genovia tier offered", list(tiers_runtime.keys()))
+    tier_selected = tiers_runtime[tier_choice]
 
-# ------------------ MAIN INPUTS ------------------
-st.subheader("Step 1 — Clinic Inputs")
+    num_cases = st.number_input(
+        "Number of cases in this order",
+        min_value=int(tier_selected["default_min_cases"]),
+        max_value=int(tier_selected["default_max_cases"]),
+        value=int(tier_selected["default_min_cases"]),
+        step=1,
+    )
 
-tier_choice = st.selectbox("Choose a Genovia tier", list(tiers_runtime.keys()))
-tier_selected = tiers_runtime[tier_choice]
+    price_per_tx = st.number_input(
+        "Clinic price per treatment ($)",
+        value=float(tier_selected["default_clinic_price_per_tx"]),
+        min_value=0.0,
+        step=50.0,
+    )
 
-num_cases = st.number_input(
-    "Number of cases",
-    min_value=int(tier_selected["default_min_cases"]),
-    max_value=int(tier_selected["default_max_cases"]),
-    value=int(tier_selected["default_min_cases"]),
-)
+    extra_cost_per_tx = st.number_input(
+        "Other per-treatment cost (staff, room, etc.)",
+        value=float(tier_selected["default_extra_cost_per_tx"]),
+        min_value=0.0,
+        step=10.0,
+    )
 
-price_per_tx = st.number_input(
-    "Clinic price per treatment ($)",
-    value=float(tier_selected["default_clinic_price_per_tx"]),
-    min_value=0.0,
-    step=50.0,
-)
+    st.markdown("### Shipping Assumptions")
+    shipping_name = st.selectbox("Shipping option", list(shipping_runtime.keys()))
+    # allow adjusting shipping cost in sidebar as well
+    shipping_cost = st.number_input(
+        "Shipping cost for this order",
+        min_value=0.0,
+        step=5.0,
+        value=shipping_runtime[shipping_name],
+        key=f"shipping_cost_active",
+    )
 
-extra_cost_per_tx = st.number_input(
-    "Other per-treatment cost (staff, room, etc.)",
-    value=float(tier_selected["default_extra_cost_per_tx"]),
-    min_value=0.0,
-    step=10.0,
-)
-
-shipping_name = st.selectbox("Shipping option", list(shipping_runtime.keys()))
-shipping_cost = shipping_runtime[shipping_name]
-
-st.markdown("---")
-
-# ------------------ ROI SUMMARY ------------------
+# ------------------ MAIN: ROI SUMMARY & OUTPUTS ------------------
 st.subheader("Step 2 — ROI Summary")
 
 results = calc_roi(
@@ -334,6 +325,7 @@ summary_export_df = pd.DataFrame(
         "Clinic price per treatment": price_per_tx,
         "Other cost per treatment": extra_cost_per_tx,
         "Shipping option": shipping_name,
+        "Shipping cost": shipping_cost,
         "Total treatments": results["total_txs"],
         "Total revenue": results["total_revenue"],
         "Total cost": results["total_cost"],
