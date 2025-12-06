@@ -508,6 +508,8 @@ st.caption("All pricing and costs load from CSV files in your GitHub repo.")
 #                     step=1,
 #                     value=tier["tx_per_case"],
 #                 )
+
+# ------------------ TIER SETTINGS & PRICING INPUTS (MAIN PAGE) ------------------
 st.markdown("### Tier Settings & Pricing Inputs")
 st.caption(
     "Adjust price and cost parameters for each Genovia tier to model different business scenarios. "
@@ -545,6 +547,18 @@ with settings_col1:
                 value=tier["tx_per_case"],
                 key=f"tx_per_case_{tier_name}",
             )
+
+with settings_col2:
+    st.markdown("**Shipping Cost Assumptions**")
+    for ship_name, cost in shipping_runtime.items():
+        shipping_runtime[ship_name] = st.number_input(
+            f"{ship_name}",
+            min_value=0.0,
+            step=5.0,
+            value=cost,
+            key=f"shipping_{ship_name}",
+        )
+
 
 
 # ------------------ MAIN INPUTS ------------------
