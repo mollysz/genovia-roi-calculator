@@ -2,10 +2,11 @@ import streamlit as st
 import pandas as pd
 from pathlib import Path
 
-# ------------------------------
-# Load configuration from Excel
-# ------------------------------
+# =========================================================
+# 1. LOAD CONFIG FROM EXCEL
+# =========================================================
 CONFIG_PATH = Path("data/genovia_config.xlsx")
+
 
 @st.cache_data
 def load_config(path: Path):
@@ -14,12 +15,18 @@ def load_config(path: Path):
     shipping_df = pd.read_excel(xls, sheet_name="shipping")
     global_df = pd.read_excel(xls, sheet_name="global_settings")
 
-    # Basic validation
+    # --- validation ---
     required_tier_cols = {
-        "tier_name", "description", "case_price", "cost_per_tx",
-        "savings_vs_standard_pct", "tx_per_case",
-        "default_clinic_price_per_tx", "default_extra_cost_per_tx",
-        "default_min_cases", "default_max_cases",
+        "tier_name",
+        "description",
+        "case_price",
+        "cost_per_tx",
+        "savings_vs_standard_pct",
+        "tx_per_case",
+        "default_clinic_price_per_tx",
+        "default_extra_cost_per_tx",
+        "default_min_cases",
+        "default_max_cases",
     }
     missing_tier = required_tier_cols - set(tiers_df.columns)
     if missing_tier:
@@ -32,19 +39,16 @@ def load_config(path: Path):
 
     return tiers_df, shipping_df, global_df
 
+
 tiers_df, shipping_df, global_df = load_config(CONFIG_PATH)
 
-# Convert global settings to dict
-GLOBAL_SETTINGS = {
-    row["key"]: row["value"] for _, row in global_df.iterrows()
-}
+# --- global settings ---
+GLOBAL_SETTINGS = {row["key"]: row["value"] for _, row in global_df.iterrows()}
 CURRENCY = str(GLOBAL_SETTINGS.get("currency_symbol", "$"))
-
-# Fallbacks for case ranges
 DEFAULT_MIN_CASES_GLOBAL = int(GLOBAL_SETTINGS.get("default_min_cases_global", 1))
 DEFAULT_MAX_CASES_GLOBAL = int(GLOBAL_SETTINGS.get("default_max_cases_global", 500))
 
-# Build TIERS structure from Excel
+# --- tiers base dict from Excel ---
 TIERS_BASE = {}
 for _, row in tiers_df.iterrows():
     TIERS_BASE[row["tier_name"]] = {
@@ -59,19 +63,19 @@ for _, row in tiers_df.iterrows():
         "default_max_cases": int(row["default_max_cases"]),
     }
 
-# Assume same tx_per_case for all tiers (can be changed per tier if needed)
-TX_PER_CASE = list(TIERS_BASE.values())[0]["tx_per_case"]
+# assume same tx_per_case across tiers for now (can be per-tier if needed)
+TX_PER_CASE_DEFAULT = list(TIERS_BASE.values())[0]["tx_per_case"]
 
-# Build shipping dict from Excel
+# --- shipping base dict from Excel ---
 SHIPPING_BASE = {
     row["shipping_name"]: float(row["shipping_cost"])
     for _, row in shipping_df.iterrows()
 }
 
 
-# ------------------------------
-# Helper functions
-# ------------------------------
+# =========================================================
+# 2. HELPERS
+# =========================================================
 def calc_roi(
     tier: dict,
     num_cases: int,
@@ -79,32 +83,27 @@ def calc_roi(
     extra_cost_per_tx: float,
     shipping_cost: float,
 ):
-    """Return a dict with all ROI metrics for a given tier and order size."""
+    """Return ROI metrics for a given tier and order size."""
     case_price = tier["case_price"]
     cost_per_tx_product = tier["cost_per_tx"]
+    tx_per_case = tier.get("tx_per_case", TX_PER_CASE_DEFAULT)
 
-    # Core quantities
     total_cases = num_cases
-    total_txs = total_cases * tier["tx_per_case"]
+    total_txs = total_cases * tx_per_case
 
-    # Costs
     product_cost = total_cases * case_price
     total_cost = product_cost + shipping_cost
 
-    # Per-treatment economics
     total_cost_per_tx = cost_per_tx_product + extra_cost_per_tx
     revenue_per_tx = price_per_tx
     profit_per_tx = revenue_per_tx - total_cost_per_tx
 
-    # Revenue & profit
     total_revenue = revenue_per_tx * total_txs
     total_profit = profit_per_tx * total_txs
 
-    # Margins & ROI
     margin_pct = (total_profit / total_revenue * 100) if total_revenue > 0 else 0
     roi_pct = (total_profit / total_cost * 100) if total_cost > 0 else 0
 
-    # Break-even
     if profit_per_tx > 0:
         breakeven_txs = total_cost / profit_per_tx
     else:
@@ -129,17 +128,19 @@ def calc_roi(
     }
 
 
-def fc(x):
+def fc(x: float) -> str:
+    """Currency, no decimals."""
     return f"{CURRENCY}{x:,.0f}"
 
 
-def fc1(x):
+def fc1(x: float) -> str:
+    """Currency, one decimal place."""
     return f"{CURRENCY}{x:,.1f}"
 
 
-# ------------------------------
-# Streamlit UI
-# ------------------------------
+# =========================================================
+# 3. STREAMLIT UI
+# =========================================================
 st.set_page_config(
     page_title="Genovia ROI Calculator",
     page_icon="💧",
@@ -147,17 +148,20 @@ st.set_page_config(
 )
 
 st.title("Genovia™ ROI Calculator")
-st.caption("All pricing and costs are loaded from Excel. You can override values for this session inside the app.")
+st.caption(
+    "All pricing and costs are loaded from Excel. Use the sidebar to override values "
+    "for this session without touching the file."
+)
 
-# ---- Advanced override controls ----
+# ------------------ SIDEBAR: ADVANCED OVERRIDES ------------------
 with st.sidebar:
     st.header("Advanced Controls")
     use_overrides = st.checkbox(
-        "Enable manual overrides (session only)", value=False,
-        help="Turn this on to adjust pricing and shipping in the app without editing Excel."
+        "Enable manual overrides (session only)",
+        value=False,
+        help="Turn this on to adjust pricing and shipping in the app without editing Excel.",
     )
 
-    # Start with base dicts
     tiers_runtime = {k: v.copy() for k, v in TIERS_BASE.items()}
     shipping_runtime = SHIPPING_BASE.copy()
 
@@ -210,27 +214,24 @@ with st.sidebar:
                 step=5.0,
                 key=f"shipping_{ship_name}",
             )
-    else:
-        tiers_runtime = TIERS_BASE
-        shipping_runtime = SHIPPING_BASE
+    # if overrides OFF, tiers_runtime & shipping_runtime stay as base
 
-# ---- Main controls ----
-st.markdown("### Step 1 – Clinic pricing & volume")
+
+# ------------------ MAIN INPUTS ------------------
+st.markdown("### Step 1 – Clinic assumptions")
 
 tier_names = list(tiers_runtime.keys())
-default_tier = tier_names[0]
 
 col1, col2 = st.columns(2)
 with col1:
     tier_choice = st.selectbox(
         "Genovia pricing tier",
         tier_names,
-        help="Choose the tier you are offering this clinic."
+        help="Choose the tier you are offering this clinic.",
     )
 
 tier_selected = tiers_runtime[tier_choice]
 
-# Determine cases range from tier / global
 min_cases = tier_selected.get("default_min_cases", DEFAULT_MIN_CASES_GLOBAL)
 max_cases = tier_selected.get("default_max_cases", DEFAULT_MAX_CASES_GLOBAL)
 
@@ -252,7 +253,7 @@ with col3:
         min_value=0.0,
         value=tier_selected["default_clinic_price_per_tx"],
         step=50.0,
-        help="What the MedSpa plans to charge patients per treatment."
+        help="What the MedSpa plans to charge patients per treatment.",
     )
 with col4:
     extra_cost_per_tx = st.number_input(
@@ -260,18 +261,19 @@ with col4:
         min_value=0.0,
         value=tier_selected["default_extra_cost_per_tx"],
         step=10.0,
-        help="Staff time, room cost, numbing, etc. Excluding Genovia product cost."
+        help="Staff time, room cost, numbing, etc. Excluding Genovia product cost.",
     )
 
 shipping_name = st.selectbox(
     "Shipping option",
     list(shipping_runtime.keys()),
-    index=0
+    index=0,
 )
 shipping_cost = shipping_runtime[shipping_name]
 
 st.markdown("---")
 
+# ------------------ ROI SUMMARY FOR SELECTED TIER ------------------
 st.markdown("### Step 2 – ROI summary")
 
 results = calc_roi(
@@ -292,7 +294,6 @@ st.write(
 if tier_selected.get("savings_vs_standard_pct", 0):
     st.write(f"- **Savings vs Standard:** {tier_selected['savings_vs_standard_pct']}%")
 
-# Key metrics in cards
 m1, m2, m3 = st.columns(3)
 m1.metric("Total cases", f"{results['total_cases']}")
 m2.metric("Total treatments", f"{results['total_txs']}")
@@ -311,6 +312,21 @@ if results["breakeven_txs"] is not None:
 else:
     m9.metric("Break-even treatments", "Not reachable (price too low)")
 
+# ----- visual: revenue vs cost vs profit -----
+st.markdown("### Visual summary – Revenue, Cost, Profit")
+summary_chart_df = pd.DataFrame(
+    {
+        "Metric": ["Total Revenue", "Total Cost", "Total Profit"],
+        "Amount": [
+            results["total_revenue"],
+            results["total_cost"],
+            results["total_profit"],
+        ],
+    }
+).set_index("Metric")
+st.bar_chart(summary_chart_df)
+
+# ----- detailed breakdown -----
 st.markdown("### Detailed breakdown")
 
 detail_rows = {
@@ -332,10 +348,15 @@ detail_df = pd.DataFrame(
 )
 st.table(detail_df)
 
+# ------------------ TIER COMPARISON ------------------
 st.markdown("### Optional – Compare tiers at the same clinic price")
+st.caption(
+    "This compares how each tier performs using the SAME clinic assumptions above "
+    "(cases, price per treatment, other cost, and shipping)."
+)
 
 if st.checkbox("Show tier comparison table"):
-    comparison = []
+    comparison_rows = []
     for t_name, t_info in tiers_runtime.items():
         r = calc_roi(
             tier=t_info,
@@ -344,7 +365,7 @@ if st.checkbox("Show tier comparison table"):
             extra_cost_per_tx=extra_cost_per_tx,
             shipping_cost=shipping_cost,
         )
-        comparison.append(
+        comparison_rows.append(
             {
                 "Tier": t_name,
                 "Cost per treatment (Genovia)": r["cost_per_tx_product"],
@@ -354,7 +375,10 @@ if st.checkbox("Show tier comparison table"):
                 "ROI %": r["roi_pct"],
             }
         )
-    comp_df = pd.DataFrame(comparison)
+
+    comp_df = pd.DataFrame(comparison_rows)
+
+    # pretty display
     comp_df_display = comp_df.copy()
     comp_df_display["Cost per treatment (Genovia)"] = comp_df_display[
         "Cost per treatment (Genovia)"
@@ -367,4 +391,14 @@ if st.checkbox("Show tier comparison table"):
         lambda x: f"{x:.1f}%"
     )
     comp_df_display["ROI %"] = comp_df_display["ROI %"].map(lambda x: f"{x:.1f}%")
+
     st.table(comp_df_display)
+
+    # visuals
+    st.markdown("#### Profit by tier")
+    profit_df = comp_df[["Tier", "Total profit"]].set_index("Tier")
+    st.bar_chart(profit_df)
+
+    st.markdown("#### ROI by tier")
+    roi_df = comp_df[["Tier", "ROI %"]].set_index("Tier")
+    st.bar_chart(roi_df)
