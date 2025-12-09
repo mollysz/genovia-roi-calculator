@@ -1,0 +1,23 @@
+Biogenomics PDLLA Pricing ideas:,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,
+Volume,Product,Provider Cost Per TX,TX Per Box,Units Per Box,Boxes per Case,TX per Case,Case Cost,Cases Ordered - Min,Cases Ordered - Max,Volume Discount/Offer,Min Order $,Max Order $,Multiplyer,Cases Recieved - Min,Cases Recieved - Max,Cost Per Case - Min,Cost Per Case - Max,Cost Per TX - Min,Cost Per TX - Max,Discount from Standard,Percentage Discount,Cases Recieved Value - Min,Cases Recieved Value - Max,VS Order Amount - Min,VS Order Amount - Max
+Standard,PDLLA,$285,2,1,5,10,"$2,850",1,4,0,"$2,850","$11,400",1,1,4,"$2,850","$2,850",$285,$285,,,$850.00,"$3,400.00","$2,850","$11,400"
+,,,,,,,,,,,,,,,,,,,,,,,,,
+Volume Gold Tier,PDLLA,$285,2,1,5,10,"$2,850",5,25,1 Case per 5 Ordered,"$14,250","$71,250",1.2,6,30,"$2,375","$2,375",$238,$238,83.33%,16.67%,"$5,100.00","$25,500.00","$14,250","$71,250"
+Volume Diamond Tier,PDLLA,$285,2,1,5,10,"$2,850",30,100,3 Cases per 10 Ordered,"$85,500","$285,000",1.3,39,130,"$2,192","$2,192",$219,$219,76.92%,23.08%,"$33,150.00","$110,500.00","$85,500","$285,000"
+,,,,,,,,,,,,,,,,,,,,,,,,,
+Volume Ruby Tier,PDLLA,$285,2,1,5,10,"$2,850",100,1000,35 Cases per 100 Ordered,"$285,000","$2,850,000",1.35,135,1350,"$2,111","$2,111",$211,$211,74.07%,25.93%,"$114,750.00","$1,147,500.00","$285,000","$2,850,000"
+,,,,,,,,,,,,,,,,,,,,,,,,,
+"Reward Points: Earn 1 Point per $, 1 Point is worth $0.05",,,,,,,,,,,,,,,,,,,,,,,,,
+Volume,Product,Min Order $,Max Order $,Cases Recieved - Min,Cases Recieved - Max,Cost Per Case - Min,Cost Per Case - Max,Cost Per TX - Min,Cost Per TX - Max,Reward Point Multipler,Reward Points - Min,Reward - Max,Reward Multiplier,Reward Value - Min,Reward Value - Max,Applied Points Cost - Min,Applied Points Cost - Max,After Point Cost - Case Min,After Point Cost - Case Max,After Point Cost - TX Min,After Point Cost - TX Max,Discount from Standard with Rewards used,Percentage Discount with Rewards used,,
+Standard,PDLLA,"$2,850","$11,400",1,4,"$2,850","$2,850",$285,$285,1,"2,850","11,400",$0.05,$142.50,$570.00,"$2,707.50","$10,830.00","$2,707.50","$2,707.50",$270.75,$270.75,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,
+Volume Gold Tier,PDLLA,"$14,250","$71,250",6,30,"$2,375","$2,375",$238,$238,1,"14,250","71,250",$0.05,$712.50,"$3,562.50","$13,537.50","$67,687.50","$2,256.25","$2,256.25",$225.63,$225.63,79.17%,20.83%,,
+Volume Diamond Tier,PDLLA,"$85,500","$285,000",39,130,"$2,192","$2,192",$219,$219,1,"85,500","285,000",$0.05,"$4,275.00","$14,250.00","$81,225.00","$270,750.00","$2,082.69","$2,082.69",$208.27,$208.27,73.08%,26.92%,,
+,,,,,,,,,,,,,,,,,,,,,,,,,
+Volume Ruby Tier,PDLLA,"$285,000","$2,850,000",135,1350,"$2,111","$2,111",$211,$211,1,"285,000","2,850,000",$0.05,"$14,250.00","$142,500.00","$270,750.00","$2,707,500.00","$2,005.56","$2,005.56",$200.56,$200.56,70.37%,29.63%,,
+,,,,,,,,,,,,,,,,,,,,,,,,,
+"I think for the potential super high volume users (Diamond & Ruby Tier) instead of lowering price or giving additional reward points, we can give exclusive & invite only events/dinners/experiences to bring added value, loyalty, and prestige to reward them for their high usage.",,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,
+,,,,,,,,,,,,,,,,,,,,,,,,,
+"I also think that the hypothetical Ruby Tier should either not exist or not be published. Maintaining company margins, value, and pricing integrity is important. I also think that giving the extra 2 or 3 reward points per dollar is too aggressive and further cuts our pricing integrity/value too low. My preference is 1 Point Per $1.",,,,,,,,,,,,,,,,,,,,,,,,,
