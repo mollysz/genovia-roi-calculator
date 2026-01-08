@@ -5,23 +5,27 @@ import io
 from docx import Document
 
 # =========================================================
-# 1. LOAD CONFIG FROM CSV FILES
+# 1. PATHS
 # =========================================================
 TIERS_PATH = Path("data/tiers.csv")
 SHIPPING_PATH = Path("data/shipping.csv")
 GLOBAL_PATH = Path("data/global_settings.csv")
+
+# IMPORTANT:
+# Replace your old broken PDLLA CSV with the clean one and keep this filename the same.
 PDLLA_TIERS_PATH = Path("data/Biogenomics Pricing - PDLLA.csv")
 
 
+# =========================================================
+# 2. CSV LOADING + VALIDATION (ROBUST)
+# =========================================================
 def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
-    """Normalize headers to avoid KeyError from case/spacing differences."""
     df = df.copy()
     df.columns = df.columns.astype(str).str.strip().str.lower()
     return df
 
 
 def _rename_aliases(df: pd.DataFrame, alias_map: dict) -> pd.DataFrame:
-    """Rename common alias headers to canonical names (only if present)."""
     df = df.copy()
     for old, new in alias_map.items():
         if old in df.columns and new not in df.columns:
@@ -37,20 +41,21 @@ def _require_columns(df: pd.DataFrame, required: list[str], df_name: str) -> Non
         st.stop()
 
 
+def _safe_int(x, default=0):
+    try:
+        return int(float(x))
+    except Exception:
+        return default
+
+
 @st.cache_data
 def load_config():
-    tiers_df = pd.read_csv(TIERS_PATH)
-    pdlla_df = pd.read_csv(PDLLA_TIERS_PATH)
-    shipping_df = pd.read_csv(SHIPPING_PATH)
-    global_df = pd.read_csv(GLOBAL_PATH)
+    tiers_df = _normalize_columns(pd.read_csv(TIERS_PATH))
+    pdlla_df = _normalize_columns(pd.read_csv(PDLLA_TIERS_PATH))
+    shipping_df = _normalize_columns(pd.read_csv(SHIPPING_PATH))
+    global_df = _normalize_columns(pd.read_csv(GLOBAL_PATH))
 
-    # Normalize headers
-    tiers_df = _normalize_columns(tiers_df)
-    pdlla_df = _normalize_columns(pdlla_df)
-    shipping_df = _normalize_columns(shipping_df)
-    global_df = _normalize_columns(global_df)
-
-    # Rename common aliases (adjust if your files use different names)
+    # Rename common aliases (just in case headers vary)
     alias_map_common = {
         "tier": "tier_name",
         "tiername": "tier_name",
@@ -62,7 +67,6 @@ def load_config():
         "price_per_case": "case_price",
         "caseprice": "case_price",
         "cost_per_treatment": "cost_per_tx",
-        "cost_per_treatment_genovia": "cost_per_tx",
         "treatments_per_case": "tx_per_case",
     }
     tiers_df = _rename_aliases(tiers_df, alias_map_common)
@@ -75,7 +79,6 @@ def load_config():
             "method": "shipping_name",
             "shipping_method": "shipping_name",
             "cost": "shipping_cost",
-            "shippingprice": "shipping_cost",
         },
     )
 
@@ -88,7 +91,6 @@ def load_config():
         },
     )
 
-    # Validate required columns
     tier_required = [
         "tier_name",
         "description",
@@ -102,7 +104,7 @@ def load_config():
         "default_max_cases",
     ]
     _require_columns(tiers_df, tier_required, "tiers.csv")
-    _require_columns(pdlla_df, tier_required, "PDLLA tiers CSV")
+    _require_columns(pdlla_df, tier_required, "Biogenomics Pricing - PDLLA.csv")
     _require_columns(shipping_df, ["shipping_name", "shipping_cost"], "shipping.csv")
     _require_columns(global_df, ["key", "value"], "global_settings.csv")
 
@@ -111,20 +113,17 @@ def load_config():
 
 tiers_df, pdlla_df, shipping_df, global_df = load_config()
 
-# Global settings
+# =========================================================
+# 3. GLOBAL SETTINGS
+# =========================================================
 GLOBAL_SETTINGS = {row["key"]: row["value"] for _, row in global_df.iterrows()}
 CURRENCY = str(GLOBAL_SETTINGS.get("currency_symbol", "$"))
-
-def _safe_int(x, default=0):
-    try:
-        return int(float(x))
-    except Exception:
-        return default
-
 DEFAULT_MIN_CASES_GLOBAL = _safe_int(GLOBAL_SETTINGS.get("default_min_cases_global", 1), 1)
 DEFAULT_MAX_CASES_GLOBAL = _safe_int(GLOBAL_SETTINGS.get("default_max_cases_global", 500), 500)
 
-# Build TIERS dict
+# =========================================================
+# 4. BUILD TIER DICTS
+# =========================================================
 TIERS_BASE = {}
 for _, row in tiers_df.iterrows():
     TIERS_BASE[str(row["tier_name"])] = {
@@ -145,7 +144,6 @@ if not TIERS_BASE:
 
 TX_PER_CASE_DEFAULT = list(TIERS_BASE.values())[0]["tx_per_case"]
 
-# Build PDLLA TIERS dict
 PDLLA_TIERS_BASE = {}
 for _, row in pdlla_df.iterrows():
     PDLLA_TIERS_BASE[str(row["tier_name"])] = {
@@ -160,14 +158,14 @@ for _, row in pdlla_df.iterrows():
         "default_max_cases": _safe_int(row["default_max_cases"], DEFAULT_MAX_CASES_GLOBAL),
     }
 
-# Shipping dict
 SHIPPING_BASE = {
     str(row["shipping_name"]): float(row["shipping_cost"])
     for _, row in shipping_df.iterrows()
 }
 
+
 # =========================================================
-# 2. HELPERS
+# 5. HELPERS
 # =========================================================
 def calc_roi(tier, num_cases, price_per_tx, extra_cost_per_tx, shipping_cost):
     case_price = float(tier["case_price"])
@@ -231,17 +229,14 @@ def build_word_report(
     shipping_cost,
     genovia_comp_df,
 ):
-    """Create a Word document (as BytesIO) summarizing the scenario + comparison."""
     doc = Document()
 
-    # Title
     doc.add_heading("Genovia vs PDLLA ROI Report", level=1)
     doc.add_paragraph(
         "This report summarizes the ROI scenario generated from the Genovia ROI Calculator, "
         "comparing Genovia exosome tiers with PDLLA tiers under the same clinic assumptions."
     )
 
-    # Section 1 – Scenario Overview
     doc.add_heading("1. Scenario Overview", level=2)
     doc.add_paragraph(f"Number of cases: {num_cases}")
     doc.add_paragraph(f"Clinic price per treatment: {fc1(price_per_tx)}")
@@ -250,12 +245,10 @@ def build_word_report(
     doc.add_paragraph(f"Genovia tier: {genovia_tier_name}")
     doc.add_paragraph(f"PDLLA tier: {pdlla_tier_name}")
 
-    # Section 2 – Genovia Financial Metrics
     doc.add_heading("2. Genovia Financial Metrics", level=2)
     table = doc.add_table(rows=1, cols=2)
-    hdr = table.rows[0].cells
-    hdr[0].text = "Metric"
-    hdr[1].text = "Value"
+    table.rows[0].cells[0].text = "Metric"
+    table.rows[0].cells[1].text = "Value"
     metrics = [
         ("Total treatments", f"{genovia_results['total_txs']:,}"),
         ("Total revenue", fc(genovia_results["total_revenue"])),
@@ -270,12 +263,10 @@ def build_word_report(
         row[0].text = name
         row[1].text = value
 
-    # Section 3 – PDLLA Financial Metrics
     doc.add_heading("3. PDLLA Financial Metrics", level=2)
     table2 = doc.add_table(rows=1, cols=2)
-    hdr2 = table2.rows[0].cells
-    hdr2[0].text = "Metric"
-    hdr2[1].text = "Value"
+    table2.rows[0].cells[0].text = "Metric"
+    table2.rows[0].cells[1].text = "Value"
     metrics_other = [
         ("Total treatments", f"{pdlla_results['total_txs']:,}"),
         ("Total revenue", fc(pdlla_results["total_revenue"])),
@@ -290,11 +281,9 @@ def build_word_report(
         row[0].text = name
         row[1].text = value
 
-    # Section 4 – Direct Comparison
     doc.add_heading("4. Genovia vs PDLLA – Direct Comparison", level=2)
     delta_profit = genovia_results["total_profit"] - pdlla_results["total_profit"]
     delta_roi = genovia_results["roi_pct"] - pdlla_results["roi_pct"]
-
     doc.add_paragraph(
         f"Under the same clinic assumptions, Genovia generates {fc(genovia_results['total_profit'])} in total profit "
         f"versus {fc(pdlla_results['total_profit'])} for PDLLA."
@@ -302,14 +291,12 @@ def build_word_report(
     doc.add_paragraph(f"Profit difference (Genovia − PDLLA): {fc(delta_profit)}.")
     doc.add_paragraph(f"ROI difference (Genovia − PDLLA): {delta_roi:.1f} percentage points.")
 
-    # Section 5 – Genovia Tier Comparison
     doc.add_heading("5. Genovia Tier Comparison at Same Clinic Price", level=2)
     comp_table = doc.add_table(rows=1, cols=4)
-    ch = comp_table.rows[0].cells
-    ch[0].text = "Tier"
-    ch[1].text = "Cost per Treatment (Genovia)"
-    ch[2].text = "Total Profit"
-    ch[3].text = "ROI %"
+    comp_table.rows[0].cells[0].text = "Tier"
+    comp_table.rows[0].cells[1].text = "Cost per Treatment (Genovia)"
+    comp_table.rows[0].cells[2].text = "Total Profit"
+    comp_table.rows[0].cells[3].text = "ROI %"
 
     for _, row in genovia_comp_df.iterrows():
         r = comp_table.add_row().cells
@@ -318,7 +305,6 @@ def build_word_report(
         r[2].text = fc(row["Total Profit"])
         r[3].text = f"{row['ROI %']:.1f}%"
 
-    # Section 6 – Recommendations
     doc.add_heading("6. Recommendations", level=2)
     recs = [
         "Use this model live in sales conversations to show scenario-based ROI for both Genovia and PDLLA.",
@@ -335,14 +321,13 @@ def build_word_report(
 
 
 # =========================================================
-# 3. UI LAYOUT
+# 6. UI
 # =========================================================
 st.set_page_config(page_title="Genovia ROI Calculator", page_icon="💧", layout="centered")
 
 st.title("Genovia™ ROI Calculator")
 st.caption("Compare Genovia exosome tiers and PDLLA tiers under the same clinic assumptions.")
 
-# ------------------ SIDEBAR: ALL INPUTS ------------------
 with st.sidebar:
     st.markdown("### Tier Settings & Pricing Inputs (Genovia)")
     st.caption(
@@ -353,7 +338,6 @@ with st.sidebar:
     tiers_runtime = {k: v.copy() for k, v in TIERS_BASE.items()}
     shipping_runtime = SHIPPING_BASE.copy()
 
-    # Tier settings
     for tier_name, tier in tiers_runtime.items():
         with st.expander(f"{tier_name} — Genovia Pricing Settings", expanded=False):
             tier["case_price"] = st.number_input(
@@ -421,7 +405,7 @@ with st.sidebar:
     pdlla_tier_choice = st.selectbox("PDLLA tier", list(PDLLA_TIERS_BASE.keys()))
     pdlla_tier_selected = PDLLA_TIERS_BASE[pdlla_tier_choice]
 
-# ------------------ MAIN: ROI SUMMARY & OUTPUTS ------------------
+
 genovia_results = calc_roi(
     tier=tier_selected,
     num_cases=int(num_cases),
@@ -569,7 +553,4 @@ st.download_button(
     file_name="Genovia_vs_PDLLA_ROI_Report.docx",
     mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 )
-
-
-
 
