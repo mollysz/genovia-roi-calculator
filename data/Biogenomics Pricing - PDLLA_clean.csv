@@ -1,0 +1,5 @@
+tier_name,description,case_price,cost_per_tx,savings_vs_standard_pct,tx_per_case,default_clinic_price_per_tx,default_extra_cost_per_tx,default_min_cases,default_max_cases
+Standard,0,2850.0,285.0,0.0,10,800.0,0.0,1,4
+Volume Gold Tier,1 Case per 5 Ordered,2850.0,237.5,16.666667,10,800.0,0.0,5,25
+Volume Diamond Tier,3 Cases per 10 Ordered,2850.0,219.230769,23.076923,10,800.0,0.0,30,100
+Volume Ruby Tier,35 Cases per 100 Ordered,2850.0,211.111111,25.925926,10,800.0,0.0,100,1000
